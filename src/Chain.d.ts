@@ -1,5 +1,5 @@
 import Spline from "./Spline";
-import { Knot } from "Types";
+import { Knot } from "./Types";
 
 interface Chain<T extends Knot> extends Spline<T> {
 	SolveArcLength(a?: number, b?: number): number;

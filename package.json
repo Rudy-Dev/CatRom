@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/catrom",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Creates [Catmull-Rom splines](https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline).",
   "main": "src/init.lua",
   "types": "src/index.d.ts",

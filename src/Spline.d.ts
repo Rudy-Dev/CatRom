@@ -1,4 +1,4 @@
-import { Knot } from "Types";
+import { Knot } from "./Types";
 
 interface Spline<T extends Knot> {
 	SolvePosition(alpha: number): Vector3;
