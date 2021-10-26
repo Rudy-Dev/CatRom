@@ -1,4 +1,4 @@
-import Spline from "Spline";
+import Spline from "./Spline";
 import { Knot } from "Types";
 
 interface Chain<T extends Knot> extends Spline<T> {
