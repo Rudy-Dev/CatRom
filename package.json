@@ -1,0 +1,40 @@
+{
+  "name": "@rbxts/catrom",
+  "version": "1.0.0",
+  "description": "Creates [Catmull-Rom splines](https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline).",
+  "main": "src/init.lua",
+  "types": "src/index.d.ts",
+  "files": [
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "rbxtsc",
+    "watch": "rbxtsc -w",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-games/CatRom.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/easy-games/CatRom/issues"
+  },
+  "homepage": "https://github.com/easy-games/CatRom#readme",
+  "devDependencies": {
+    "@rbxts/compiler-types": "^1.2.3-types.1",
+    "@rbxts/types": "^1.0.542",
+    "@typescript-eslint/eslint-plugin": "^5.1.0",
+    "@typescript-eslint/parser": "^5.1.0",
+    "eslint": "^8.0.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-roblox-ts": "^0.0.32",
+    "prettier": "^2.4.1",
+    "typescript": "^4.4.4"
+  }
+}
