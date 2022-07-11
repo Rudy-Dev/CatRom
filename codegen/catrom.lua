@@ -1,5 +1,7 @@
+---@diagnostic disable: undefined-global
+--# selene: allow(undefined_variable)
 --[[
-	Copies the Spline methods into Chain. If the following two lines are not
+	Copies the Spline methods into CatRom. If the following two lines are not
 	present in the script,
 
 	---- START GENERATED METHODS
@@ -11,8 +13,8 @@
 local START_GEN = "---- START GENERATED METHODS"
 local END_GEN = "---- END GENERATED METHODS"
 
-local CHAIN_FILE = "src/Chain.lua"
-local SPLINE_FILE = "src/Spline.lua"
+local CATROM_FILE = "src/init.lua"
+local SPLINE_FILE = "src/spline.lua"
 
 -- Generate the methods
 local Methods = {}
@@ -30,13 +32,12 @@ for line in io.lines(SPLINE_FILE) do
 			table.insert(args, arg)
 		end
 
-		if #args == 1 and args[1] == "alpha" then
+		if #args == 1 and args[1] == "t" then
 			local methodName = string.match(line, "(%a+)%(", 22)
 			local method = {
-				"function Chain:Solve" .. methodName .. string.sub(line, stop),
-				"\tassert(tUnitInterval(alpha))",
-				"\tlocal spline, splineAlpha = AlphaToSpline(self, alpha)",
-				"\treturn spline:Solve" .. methodName .. "(splineAlpha)"
+				"function CatRom:Solve" .. methodName .. string.sub(line, stop),
+				"\tlocal spline, splineT = self:GetSplineFromT(t)",
+				"\treturn spline:Solve" .. methodName .. "(splineT)"
 			}
 
 			-- End the method
@@ -51,7 +52,7 @@ end
 local FileData = {}
 local InGeneratedLines = false
 
-for line in io.lines(CHAIN_FILE) do
+for line in io.lines(CATROM_FILE) do
 	if line == START_GEN then
 		table.insert(FileData, line)
 		-- Write the methods
@@ -70,7 +71,7 @@ for line in io.lines(CHAIN_FILE) do
 end
 
 -- Write to the file
-local file = io.open(CHAIN_FILE, "w")
+local file = io.open(CATROM_FILE, "w")
 
 for i, line in ipairs(FileData) do
 	if i == #FileData then
@@ -81,4 +82,4 @@ for i, line in ipairs(FileData) do
 	end
 end
 
-file.close()
+file:close()

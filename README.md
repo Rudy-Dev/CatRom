@@ -1,36 +1,81 @@
-# CatRom
+<div align="center">
+	<img src="https://github.com/EthanCurtiss/CatRom/blob/master/docs/logo-light.svg#gh-light-mode-only" height="180" alt="CatRom logo"/>
+	<img src="https://github.com/EthanCurtiss/CatRom/blob/master/docs/logo-dark.svg#gh-dark-mode-only" height="180" alt="CatRom logo"/>
+	<hr/>
+</div>
+
 Creates [Catmull-Rom splines](https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline).
 
-The Catmull-Rom spline (CatRom) is a cousin of the popular Bézier curve. One important difference between them is that CatRoms chain together easier. Like a cubic Bézier, a CatRom is defined by 4 points. Using the last 3 points from one CatRom as the first 3 points of another allows for a seamless transition between the two.
+The Catmull-Rom spline (CatRom) is a cousin of the popular Bézier curve, with the key difference that CatRoms are guaranteed to pass through their control points. This allows them to chain together predictably and intuitively.
 
-![Tube](docs/tube.png)
+<img src="docs/tube.png" height="300"/>
 
 ## How to use
-This module has 2 objects: **Spline** and **Chain**.
+The CatRom constructor takes 3 arguments:
+1. `points`: An array of Vector2s, Vector3s, or CFrames.
+2. `alpha` [optional]: A number (usually) in [0, 1] that determines the "parameterization" of the spline; defaults to 0.5.
+3. `tension` [optional]: A number (usually) in [0, 1] that determines how loose the spline is; defaults to 0.
 
-A Spline is a CatRom defined by 4 points, an *alpha*, and a *tension*. The alpha and tension are not defined well currently and will be renamed in later versions.
+The default `alpha` of 0.5 is the only way to avoid cusps and loops, as shown [in this paper](http://www.cemyuksel.com/research/catmullrom_param/).
 
-A Chain is a set of connected Splines defined by an array of points, an alpha, and a tension. The Chain constructor will handle all of the Spline creation for you.
+## API
+***Note:*** *For each `Solve` method, there exists a `SolveUniform` counterpart that spaces the input(s) uniformly along the curve. Be aware that the uniform methods are slower to compute.*
+```lua
+CatRom.new(points: array, alpha: number?, tension: number?)
+```
+```lua
+CatRom:SolvePosition(t: number)
+```
+```lua
+CatRom:SolveCFrame(t: number)
+```
+```lua
+CatRom:SolveRotCFrame(t: number)
+```
+```lua
+CatRom:SolveVelocity(t: number)
+```
+```lua
+CatRom:SolveAcceleration(t: number)
+```
+```lua
+CatRom:SolveTangent(t: number)
+```
+```lua
+CatRom:SolveNormal(t: number)
+```
+```lua
+CatRom:SolveBinormal(t: number)
+```
+```lua
+CatRom:SolveCurvature(t: number)
+```
+```lua
+CatRom:SolveLength(a: number?, b: number?)
+```
+```lua
+CatRom:PrecomputeArcLengthParams(numIntervals: number?)
+```
 
-Note that the alpha and tension cannot be changed after a Spline or Chain has been created. This may change.
+## Performance Tips
+### 1. `Uniform` methods
+If you are calling many `Uniform` methods, you should call `PrecomputeArcLengthParams()` immediately after construction. This will make your `Uniform` calls less accurate but cheaper to compute. The accuracy can be further tuned using the `numIntervals` argument; lower is faster and less accurate, higher is slower and more accurate (defaults to 16).
 
-## Constructors
-The constructors will likely be changed in the future to instead take in a dictionary of settings.
-### **`CatRom.Spline.new(p0, p1, p2, p3, alpha, tension)`**
-### **`CatRom.Chain.new(points, alpha, tension)`**
-
-## Methods
-Splines and Chains share the same methods, so while I have chosen to write "Chain" here, all of these apply to Splines as well.
-Note that each method listed also has a `SolveUniform` counterpart. The uniform counterparts re-parameterize the inputs such that they correspond to a percent length along the curve.
-### **`Chain:SolvePosition(alpha: number)`**
-### **`Chain:SolveCFrame(alpha: number)`**
-### **`Chain:SolveRotCFrame(alpha: number)`**
-
-### **`Chain:SolveVelocity(alpha: number)`**
-### **`Chain:SolveAcceleration(alpha: number)`**
-
-### **`Chain:SolveTangent(alpha: number)`**
-### **`Chain:SolveNormal(alpha: number)`**
-### **`Chain:SolveBinormal(alpha: number)`**
-### **`Chain:SolveCurvature(alpha: number)`**
-### **`Chain:SolveLength(a: number, b: number)`**
+### 2. Repeated inputs
+If you are calling many methods on the *same* input like so:
+```lua
+local t -- number in [0, 1]
+local catRom -- a CatRom object
+catRom:SolvePosition(t)
+catRom:SolveVelocity(t)
+catRom:SolveTangent(t)
+```
+then it is faster to instead do
+```lua
+local t -- number in [0, 1]
+local catRom -- a CatRom object
+local spline, splineT = catRom:GetSplineFromT(t)
+spline:SolvePosition(splineT)
+spline:SolveVelocity(splineT)
+spline:SolveTangent(splineT)
+```
