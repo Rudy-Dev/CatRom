@@ -22,6 +22,8 @@ interface CatRom<T = ValidPointType> {
 	SolveUniformBinormal(t: number): Vector3;
 	SolveUniformCurvature(t: number): [number, Vector3];
 	SolveUniformLength(a?: number, b?: number): number;
+	SolveTForCFrame(pos: Vector3, resolution?: number): [number | undefined, CFrame | undefined];
+	SolveTForPositionSolved(pos: Vector3, resolution?: number): Vector3 | undefined;
 
 	PrecomputeArcLengthParams(numINtervals?: number): void;
 }
