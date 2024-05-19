@@ -20,8 +20,9 @@ local function FuzzyEq(a, b)
 	elseif aType == "Vector2" then
 		local aX, bX = a.X, b.X
 		local aY, bY = a.Y, b.Y
-		return  aX == bX or math.abs(aX - bX) <= (math.abs(aX) + 1) * EPSILON
-			and aY == bY or math.abs(aY - bY) <= (math.abs(aY) + 1) * EPSILON
+		return aX == bX
+			or math.abs(aX - bX) <= (math.abs(aX) + 1) * EPSILON and aY == bY
+			or math.abs(aY - bY) <= (math.abs(aY) + 1) * EPSILON
 	elseif aType == "CFrame" then
 		return a.Position:FuzzyEq(b.Position, EPSILON)
 			and a.RightVector:FuzzyEq(b.RightVector, EPSILON)
@@ -36,20 +37,20 @@ local function CFrameToQuaternion(cframe)
 	local axis, angle = cframe:ToAxisAngle()
 	angle /= 2
 	axis = math.sin(angle) * axis
-	return {math.cos(angle), axis.X, axis.Y, axis.Z}
+	return { math.cos(angle), axis.X, axis.Y, axis.Z }
 end
 
 local function ToTransform(point, pointType)
 	if pointType == "Vector2" or pointType == "Vector3" then
-		return {point}
+		return { point }
 	elseif pointType == "CFrame" then
-		return {point.Position, CFrameToQuaternion(point)}
+		return { point.Position, CFrameToQuaternion(point) }
 	end
 
 	return nil
 end
 
-function CatRom.new(points: {Point}, alpha: number?, tension: number?)
+function CatRom.new(points: { Point }, alpha: number?, tension: number?)
 	alpha = alpha or DEFAULT_ALPHA -- Parameterization exponent
 	tension = tension or DEFAULT_TENSION
 
@@ -59,14 +60,17 @@ function CatRom.new(points: {Point}, alpha: number?, tension: number?)
 	assert(type(tension) == "number", "Tension must be a number")
 	assert(#points > 0, "Points table cannot be empty")
 	local pointType = typeof(points[1])
-	assert(pointType == "Vector2" or pointType == "Vector3" or pointType == "CFrame",
-		"Points must be a table of Vector2s, Vector3s, or CFrames")
+	assert(
+		pointType == "Vector2" or pointType == "Vector3" or pointType == "CFrame",
+		"Points must be a table of Vector2s, Vector3s, or CFrames"
+	)
 	for _, point in ipairs(points) do
 		assert(typeof(point) == pointType, "All points must have the same type")
 	end
 
 	-- Remove equal adjacent points
-	local uniquePoints = {} do
+	local uniquePoints = {}
+	do
 		local prevPoint = points[1]
 		uniquePoints[1] = prevPoint
 		local i = 2
@@ -88,17 +92,18 @@ function CatRom.new(points: {Point}, alpha: number?, tension: number?)
 			alpha = alpha,
 			tension = tension,
 
-			splines = {Spline.fromPoint(ToTransform(points[1], pointType))},
-			domains = {0},
+			splines = { Spline.fromPoint(ToTransform(points[1], pointType)) },
+			domains = { 0 },
 
-			length = 0
+			length = 0,
 		}, CatRom)
 	end
 
 	-- Extrapolate to get 0th and n+1th points
 	local firstPoint = points[1]
 	local lastPoint = points[numPoints]
-	local zerothPoint, veryLastPoint do
+	local zerothPoint, veryLastPoint
+	do
 		if FuzzyEq(firstPoint, lastPoint) then
 			-- Loops
 			zerothPoint = points[numPoints - 1]
@@ -123,10 +128,10 @@ function CatRom.new(points: {Point}, alpha: number?, tension: number?)
 			alpha = alpha,
 			tension = tension,
 
-			splines = {spline},
-			domains = {0},
+			splines = { spline },
+			domains = { 0 },
 
-			length = spline.length
+			length = spline.length,
 		}, CatRom)
 	end
 
@@ -159,8 +164,7 @@ function CatRom.new(points: {Point}, alpha: number?, tension: number?)
 	end
 
 	-- Add the last spline, whose fourth point is not in the points table
-	splines[numSplines] = Spline.new(window2, window3, window4,
-		ToTransform(veryLastPoint, pointType), alpha, tension)
+	splines[numSplines] = Spline.new(window2, window3, window4, ToTransform(veryLastPoint, pointType), alpha, tension)
 	totalLength += splines[numSplines].length
 
 	-- Get the start of the domain interval for each spline
@@ -178,7 +182,7 @@ function CatRom.new(points: {Point}, alpha: number?, tension: number?)
 		splines = splines,
 		domains = domains,
 
-		length = totalLength
+		length = totalLength,
 	}, CatRom)
 end
 
@@ -365,6 +369,63 @@ end
 function CatRom:SolveUniformRotCFrame(t: number)
 	local spline, splineT = self:GetSplineFromT(t)
 	return spline:SolveUniformRotCFrame(splineT)
+end
+
+--This is a rather bad aproximation be aware
+function CatRom:SolveTForPosition(pos: Vector3, resolution: number): (number?, Vector3?)
+	resolution = resolution or 0.01
+
+	local closestPoint = nil
+	local closestDistance = math.huge
+	local closestT = nil
+	for t = 0, 1, resolution do
+		local pointOnSpline = self:SolveUniformPosition(t)
+		local distance = (pointOnSpline - pos).Magnitude
+
+		if distance < closestDistance then
+			closestDistance = distance
+			closestPoint = pointOnSpline
+			closestT = t
+		end
+	end
+	
+	return closestT, closestPoint
+end
+--This is a rather bad aproximation be aware
+function CatRom:SolveTForCFrame(pos: Vector3, resolution: number): (number?, CFrame?)
+	resolution = resolution or 0.01
+
+	local closestPoint = nil
+	local closestDistance = math.huge
+	local closestT = nil
+	for t = 0, 1, resolution do
+		local pointOnSpline = self:SolveUniformCFrame(t)
+		local distance = (pointOnSpline.Position - pos).Magnitude
+
+		if distance < closestDistance then
+			closestDistance = distance
+			closestPoint = pointOnSpline
+			closestT = t
+		end
+	end
+
+	return closestT, closestPoint
+end
+function CatRom:SolveTForPositionSolved(pos: Vector3, resolution): Vector3?
+	resolution = resolution or 0.01
+	local splines = self.splines
+
+	local values = {}
+	for _, spline in splines do
+		local pos = spline:SolveTForPositions(pos, resolution)
+
+		table.insert(values, pos)
+	end
+	table.sort(values, function(a, b)
+		return (a - pos).Magnitude < (b - pos).Magnitude
+	end)
+
+	return values[1]
 end
 ---- END GENERATED METHODS
 
