@@ -33,14 +33,18 @@ function Spline.new(trans0, trans1, trans2, trans3, alpha, tension)
 	a = 2 * -pos2_pos1 + m1 + m2
 	b = 3 * pos2_pos1 - 2 * m1 - m2
 	c = m1
-	
+
 	local self = setmetatable({
+		trans0 = trans0,
+		trans1 = trans1,
+		trans2 = trans2,
+		trans3 = trans3,
 		-- Rotations (nil if VectorCatRom)
 		rot0 = trans0[2],
 		rot1 = trans1[2],
 		rot2 = trans2[2],
 		rot3 = trans3[2],
-		
+
 		length = nil,
 
 		-- Coefficient vectors for position/velocity/acceleration polynomials
@@ -49,10 +53,10 @@ function Spline.new(trans0, trans1, trans2, trans3, alpha, tension)
 		c = c,
 		d = pos1,
 
-		arcLengthParamsLUT = nil
+		arcLengthParamsLUT = nil,
 	}, Spline)
 	self.length = self:SolveLength()
-	
+
 	return self
 end
 
@@ -70,7 +74,7 @@ function Spline.fromPoint(trans)
 		c = zero,
 		d = trans[1],
 
-		arcLengthParamsLUT = nil
+		arcLengthParamsLUT = nil,
 	}, Spline)
 end
 
@@ -80,6 +84,10 @@ function Spline.fromLine(trans0, trans1, trans2, trans3)
 	local pos2_pos1 = trans2[1] - pos1
 
 	return setmetatable({
+		trans0 = trans0,
+		trans1 = trans1,
+		trans2 = trans2,
+		trans3 = trans3,
 		rot0 = trans0[2],
 		rot1 = trans1[2],
 		rot2 = trans2[2],
@@ -92,7 +100,7 @@ function Spline.fromLine(trans0, trans1, trans2, trans3)
 		c = pos2_pos1,
 		d = pos1,
 
-		arcLengthParamsLUT = nil
+		arcLengthParamsLUT = nil,
 	}, Spline)
 end
 
@@ -205,13 +213,11 @@ function Spline:Reparameterize(s: number)
 		local numIntervals = #self.arcLengthParams - 1
 		local intervalIndex = math.floor(s * numIntervals) + 1
 		local t = s * numIntervals - intervalIndex + 1
-		return arcLengthParams[intervalIndex] * (1 - t)
-			 + arcLengthParams[intervalIndex + 1] * t
+		return arcLengthParams[intervalIndex] * (1 - t) + arcLengthParams[intervalIndex + 1] * t
 	else
 		return self:_ReparameterizeHybrid(s)
 	end
 end
-
 
 -- Performs the actual arc length parameterization
 -- s = \int_{0}^{t} ||r'(t)||dt = F(t) - F(0) = F(t)
@@ -234,7 +240,7 @@ function Spline:_ReparameterizeHybrid(s: number)
 	local upper = 1
 
 	for _ = 1, MAX_NEWTON_ITERATIONS do
-		local f =  GaussLegendre.Ten(integrand, 0, t) / self.length - s
+		local f = GaussLegendre.Ten(integrand, 0, t) / self.length - s
 		if math.abs(f) < EPSILON then
 			return t
 		end
@@ -305,6 +311,24 @@ function Spline:SolveUniformRotCFrame(t: number)
 end
 function Spline:SolveUniformLength(a: number?, b: number?)
 	return self:SolveLength(self:Reparameterize(a), self:Reparameterize(b))
+end
+function Spline:SolveTForPositions(p: Vector3, resolution): (Vector3?, number?)
+	local closestPoint = nil
+	local closestDistance = math.huge
+	local closestT = nil
+	local solve = self.SolvePosition
+	for t = 0, 1, resolution do
+		local pointOnSpline = solve(self, t)
+		local distance = (pointOnSpline - p).Magnitude
+
+		if distance < closestDistance then
+			closestDistance = distance
+			closestPoint = pointOnSpline
+			closestT = t
+		end
+	end
+
+	return closestPoint, closestT
 end
 ---- END GENERATED METHODS
 
